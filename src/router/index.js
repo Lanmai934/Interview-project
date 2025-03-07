@@ -46,6 +46,30 @@ export const constantRoutes = [
         meta: { title: '表单设计器', icon: 'form' }
       }
     ]
+  },
+  {
+    path: '/three',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'ThreeD',
+        component: () => import('@/views/ThreeD/index'),
+        meta: { title: '3D展示', icon: 'experiment' }
+      }
+    ]
+  },
+  {
+    path: '/gis',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'WebGIS',
+        component: () => import('@/views/WebGIS/index'),
+        meta: { title: 'WebGIS', icon: 'global' }
+      }
+    ]
   }
 ]
 
