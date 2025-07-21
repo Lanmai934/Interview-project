@@ -24,6 +24,18 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/RecursiveTableWrapper',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'RecursiveTableWrapper',
+        component: () => import('@/views/RecursiveTableWrapper/index'),
+        meta: { title: '递归表格', icon: 'RecursiveTableWrapper' }
+      }
+    ]
+  },
+  {
     path: '/users',
     component: Layout,
     children: [

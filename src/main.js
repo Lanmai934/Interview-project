@@ -5,11 +5,15 @@ import store from './store'
 import Antd from 'ant-design-vue'
 import 'ant-design-vue/dist/antd.css'
 import Components from './components'
+// 引入 Element UI
+import ElementUI from 'element-ui';
+import 'element-ui/lib/theme-chalk/index.css';
 
 // 引入 mock
 import './mock'
 
 Vue.use(Antd)
+Vue.use(ElementUI);
 Vue.use(Components)
 Vue.config.productionTip = false
 

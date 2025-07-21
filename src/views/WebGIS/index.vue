@@ -130,7 +130,7 @@ import VectorSource from 'ol/source/Vector'
 import OSM from 'ol/source/OSM'
 import XYZ from 'ol/source/XYZ'
 import { Draw } from 'ol/interaction'
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style'
+import { Circle as CircleStyle, Fill, Stroke, Style, Text } from 'ol/style'
 import { transform, fromLonLat } from 'ol/proj'
 import * as turf from '@turf/turf'
 import Feature from 'ol/Feature'
@@ -142,6 +142,7 @@ import { KML } from 'ol/format'
 import HeatmapLayer from 'ol/layer/Heatmap'
 import polyline from '@mapbox/polyline'
 import { initWasm, getWasmModule } from '@/utils/wasm-loader'
+import { getLength, getArea } from 'ol/sphere'
 
 export default {
   name: 'WebGIS',
@@ -294,17 +295,49 @@ export default {
       this.draw.on('drawend', async (event) => {
         const feature = event.feature
         const geometry = feature.getGeometry()
-        const coordinates = geometry.getCoordinates()
         
         let measurement
         if (type === 'distance') {
-          measurement = await this.measureDistanceWasm(coordinates)
-          measurement = measurement ? `${(measurement / 1000).toFixed(2)} km` : '计算失败'
+          const length = getLength(geometry, {
+            projection: this.map.getView().getProjection()
+          })
+          measurement = length > 1000 ? 
+            `${(length / 1000).toFixed(2)} km` : 
+            `${length.toFixed(2)} m`
         } else {
-          measurement = await this.measureAreaWasm(coordinates[0])
-          measurement = measurement ? `${(measurement / 1000000).toFixed(2)} km²` : '计算失败'
+          const area = getArea(geometry, {
+            projection: this.map.getView().getProjection()
+          })
+          measurement = area > 1000000 ? 
+            `${(area / 1000000).toFixed(2)} km²` : 
+            `${area.toFixed(2)} m²`
         }
         
+        // 添加测量结果标注
+        const coordinates = type === 'distance' ? 
+          geometry.getLastCoordinate() : 
+          geometry.getInteriorPoint().getCoordinates()
+
+        const measureLabel = new Feature({
+          geometry: new Point(coordinates)
+        })
+
+        measureLabel.setStyle(new Style({
+          text: new Text({
+            text: measurement,
+            font: '14px sans-serif',
+            fill: new Fill({
+              color: '#000'
+            }),
+            stroke: new Stroke({
+              color: '#fff',
+              width: 3
+            }),
+            offsetY: -15
+          })
+        }))
+
+        this.vectorSource.addFeature(measureLabel)
         this.$message.info(`测量结果: ${measurement}`)
       })
     },
@@ -532,7 +565,10 @@ export default {
     // 使用 WebAssembly 计算距离
     async measureDistanceWasm(coordinates) {
       if (!this.wasmReady) {
-        return this.formatLength(coordinates)  // 降级到 JavaScript 实现
+        const length = getLength(new LineString(coordinates), {
+          projection: this.map.getView().getProjection()
+        })
+        return length
       }
 
       try {
@@ -553,14 +589,20 @@ export default {
         return totalDistance
       } catch (error) {
         console.error('WebAssembly distance calculation failed:', error)
-        return this.formatLength(coordinates)  // 降级到 JavaScript 实现
+        const length = getLength(new LineString(coordinates), {
+          projection: this.map.getView().getProjection()
+        })
+        return length
       }
     },
 
     // 使用 WebAssembly 计算面积
     async measureAreaWasm(coordinates) {
       if (!this.wasmReady) {
-        return this.formatArea(coordinates)  // 降级到 JavaScript 实现
+        const area = getArea(new Polygon([coordinates]), {
+          projection: this.map.getView().getProjection()
+        })
+        return area
       }
 
       try {
@@ -573,7 +615,10 @@ export default {
         return wasm.GisOps.calculate_area(points)
       } catch (error) {
         console.error('WebAssembly area calculation failed:', error)
-        return this.formatArea(coordinates)  // 降级到 JavaScript 实现
+        const area = getArea(new Polygon([coordinates]), {
+          projection: this.map.getView().getProjection()
+        })
+        return area
       }
     },
 
