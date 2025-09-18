@@ -80,9 +80,16 @@ const router = new VueRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
+  
   if (to.path === '/login') {
-    next()
+    // 如果已经登录，重定向到首页
+    if (token) {
+      next('/')
+    } else {
+      next()
+    }
   } else {
+    // 需要登录的页面
     if (!token) {
       next('/login')
     } else {
@@ -91,4 +98,4 @@ router.beforeEach((to, from, next) => {
   }
 })
 
-export default router 
+export default router

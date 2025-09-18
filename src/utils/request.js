@@ -2,7 +2,12 @@ import axios from 'axios'
 import { message } from 'ant-design-vue'
 
 const service = axios.create({
-  baseURL: '/api',
+  // baseURL: '/api',
+  //mock
+  //baseURL: 'http://localhost:4010/api',
+  // 远端
+  baseURL: 'http://localhost:3000/api',
+
   timeout: 5000
 })
 
@@ -40,4 +45,4 @@ service.interceptors.response.use(
   }
 )
 
-export default service 
+export default service

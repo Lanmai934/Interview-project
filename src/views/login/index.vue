@@ -100,4 +100,4 @@ export default {
   text-align: center;
   margin-bottom: 30px;
 }
-</style> 
+</style>
