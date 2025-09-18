@@ -1,0 +1,177 @@
+name: API Automation Workflow
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'openapi.json'
+      - 'api-config.js'
+      - 'scripts/generate-api.js'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'openapi.json'
+      - 'api-config.js'
+      - 'scripts/generate-api.js'
+  workflow_dispatch:
+
+jobs:
+  api-validation:
+    name: Validate OpenAPI Specification
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Validate OpenAPI spec
+      run: npm run api:validate
+      
+  generate-api-sdk:
+    name: Generate API SDK
+    runs-on: ubuntu-latest
+    needs: api-validation
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Generate API SDK
+      run: npm run api:generate
+      
+    - name: Check for changes
+      id: verify-changed-files
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changed=true" >> $GITHUB_OUTPUT
+        else
+          echo "changed=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Commit generated files
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add src/api/generated/
+        git commit -m "chore: auto-generate API SDK from OpenAPI spec [skip ci]"
+        
+    - name: Push changes
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
+        
+  test-mock-api:
+    name: Test Mock API
+    runs-on: ubuntu-latest
+    needs: api-validation
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Start Prism Mock Server
+      run: |
+        npm run api:mock &
+        sleep 10
+        
+    - name: Test Mock API endpoints
+      run: |
+        # Test user login endpoint
+        curl -X POST http://localhost:4010/api/login \
+          -H "Content-Type: application/json" \
+          -d '{"username":"test","password":"test123"}' \
+          --fail --silent --show-error
+          
+        # Test get users endpoint
+        curl -X GET "http://localhost:4010/api/users?page=1&limit=10" \
+          --fail --silent --show-error
+          
+        # Test create user endpoint
+        curl -X POST http://localhost:4010/api/users \
+          -H "Content-Type: application/json" \
+          -d '{"username":"newuser","email":"test@example.com"}' \
+          --fail --silent --show-error
+          
+        echo "✅ All Mock API tests passed!"
+        
+  deploy-docs:
+    name: Deploy API Documentation
+    runs-on: ubuntu-latest
+    needs: [api-validation, generate-api-sdk]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Generate static documentation
+      run: |
+        mkdir -p docs
+        npx swagger-ui-dist-cli -f openapi.json -d docs/
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+        
+  notify-completion:
+    name: Notify Completion
+    runs-on: ubuntu-latest
+    needs: [generate-api-sdk, test-mock-api, deploy-docs]
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: needs.generate-api-sdk.result == 'success' && needs.test-mock-api.result == 'success'
+      run: |
+        echo "🎉 API automation workflow completed successfully!"
+        echo "✅ API SDK generated"
+        echo "✅ Mock API tests passed"
+        echo "✅ Documentation deployed"
+        
+    - name: Notify failure
+      if: needs.generate-api-sdk.result == 'failure' || needs.test-mock-api.result == 'failure'
+      run: |
+        echo "❌ API automation workflow failed!"
+        echo "Please check the logs for details."
+        exit 1

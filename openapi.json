@@ -1,0 +1,504 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Interview Project API",
+    "version": "1.0.0",
+    "description": "项目API接口文档",
+    "contact": {
+      "name": "API Support",
+      "email": "support@example.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "开发服务器"
+    },
+    {
+      "url": "http://localhost:4010",
+      "description": "Mock服务器"
+    }
+  ],
+  "paths": {
+    "/api/login": {
+      "post": {
+        "summary": "用户登录",
+        "tags": ["用户管理"],
+        "operationId": "userLogin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "登录成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "登录失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "summary": "获取用户列表",
+        "tags": ["用户管理"],
+        "operationId": "getUserList",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            },
+            "description": "页码"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "每页数量"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "inactive"]
+            },
+            "description": "用户状态过滤"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取用户列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "创建用户",
+        "tags": ["用户管理"],
+        "operationId": "createUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "用户创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "summary": "获取用户详情",
+        "tags": ["用户管理"],
+        "operationId": "getUserById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "用户ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取用户详情",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "用户不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "更新用户",
+        "tags": ["用户管理"],
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "用户ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "用户更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "用户不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "删除用户",
+        "tags": ["用户管理"],
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "用户ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "用户删除成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "用户不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "required": ["id", "username", "email"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "用户ID",
+            "example": 1
+          },
+          "username": {
+            "type": "string",
+            "description": "用户名",
+            "example": "admin",
+            "minLength": 3,
+            "maxLength": 50
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "邮箱地址",
+            "example": "admin@example.com"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive"],
+            "description": "用户状态",
+            "example": "active"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间",
+            "example": "2024-01-01T00:00:00Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间",
+            "example": "2024-01-01T00:00:00Z"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["username", "password"],
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "用户名",
+            "example": "admin"
+          },
+          "password": {
+            "type": "string",
+            "description": "密码",
+            "example": "123456",
+            "minLength": 6
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "登录是否成功",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "description": "响应消息",
+            "example": "登录成功"
+          },
+          "token": {
+            "type": "string",
+            "description": "JWT令牌",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "CreateUserRequest": {
+        "type": "object",
+        "required": ["username", "email"],
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "用户名",
+            "example": "newuser",
+            "minLength": 3,
+            "maxLength": 50
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "邮箱地址",
+            "example": "newuser@example.com"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive"],
+            "description": "用户状态",
+            "default": "active"
+          }
+        }
+      },
+      "UpdateUserRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "用户名",
+            "minLength": 3,
+            "maxLength": 50
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "邮箱地址"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive"],
+            "description": "用户状态"
+          }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "UserListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "总数量",
+            "example": 100
+          },
+          "page": {
+            "type": "integer",
+            "description": "当前页码",
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "description": "每页数量",
+            "example": 10
+          }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "操作成功"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "description": "错误消息",
+            "example": "操作失败"
+          },
+          "code": {
+            "type": "string",
+            "description": "错误代码",
+            "example": "VALIDATION_ERROR"
+          },
+          "details": {
+            "type": "object",
+            "description": "错误详情",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}

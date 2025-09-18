@@ -5,7 +5,13 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "api:generate": "node scripts/generate-api.js",
+    "api:mock": "prism mock openapi.json --port 4010",
+    "api:docs": "swagger-ui-serve openapi.json --port 8080",
+    "api:validate": "node scripts/validate-api.js",
+    "api:test": "npm run api:validate && npm run api:generate",
+    "dev:full": "concurrently \"npm run serve\" \"npm run api:mock\" \"npm run api:docs\""
   },
   "dependencies": {
     "@mapbox/polyline": "^1.2.1",
@@ -27,10 +33,13 @@
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
+    "@openapitools/openapi-generator-cli": "^2.23.4",
+    "@stoplight/prism-cli": "^5.14.2",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
     "body-parser": "^1.20.3",
+    "concurrently": "^9.2.1",
     "eslint": "^7.32.0",
     "eslint-plugin-vue": "^8.0.3",
     "less": "^4.1.1",
@@ -38,6 +47,8 @@
     "mockjs": "^1.1.0",
     "sass": "^1.85.1",
     "sass-loader": "^10.5.2",
+    "swagger-typescript-api": "^13.2.11",
+    "swagger-ui-serve": "^0.0.4",
     "vue-template-compiler": "^2.6.14"
   },
   "eslintConfig": {
