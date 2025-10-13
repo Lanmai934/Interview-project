@@ -3,6 +3,7 @@
 export interface User {
   id: number; // 用户ID
   username: string; // 用户名
+  password?: string; // 密码
   email: string; // 邮箱地址
   status?: 'active' | 'inactive'; // 用户状态
   createdAt?: string; // 创建时间
@@ -57,5 +58,10 @@ export interface ErrorResponse {
   message?: string; // 错误消息
   code?: string; // 错误代码
   details?: Record<string, any>; // 错误详情
+}
+
+export interface ResetPasswordRequest {
+  newPassword: string; // 新密码
+  confirmPassword?: string; // 确认密码
 }
 

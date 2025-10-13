@@ -1,4 +1,5 @@
 import { login } from '@/api/user'
+import { apiClient } from '@/api/generated/index.js';
 
 const state = {
   token: localStorage.getItem('token') || '',
@@ -9,6 +10,8 @@ const mutations = {
   SET_TOKEN: (state, token) => {
     state.token = token
     localStorage.setItem('token', token)
+    // 同时设置API客户端的token
+    apiClient.setAuthToken(token)
   },
   SET_USER_INFO: (state, userInfo) => {
     state.userInfo = userInfo
@@ -19,15 +22,21 @@ const mutations = {
     state.userInfo = {}
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
+    // 清除API客户端的token
+    apiClient.setAuthToken('')
   }
 }
 
 const actions = {
   // 登录
-  login({ commit }, userInfo) {
-    console.log('Login action called with:', userInfo)
+  login({ commit }, { username, password }) {
+    console.log('Login action called with:', { username, password })
+    const loginData = {
+      username,
+      password
+    }
     return new Promise((resolve, reject) => {
-      login(userInfo)
+      login(loginData)
         .then(response => {
           console.log('Login API response:', response)
           const { data } = response
@@ -52,4 +61,4 @@ export default {
   state,
   mutations,
   actions
-} 
+}

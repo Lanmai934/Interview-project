@@ -2,6 +2,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
+const http = require('http');
+require('dotenv').config();
+
+// 加载配置
+const config = require('../api-config.js');
 
 // 确保输出目录存在
 function ensureDirectoryExists(dirPath) {
@@ -11,19 +17,93 @@ function ensureDirectoryExists(dirPath) {
   }
 }
 
-// 从OpenAPI规范生成TypeScript API客户端
-function generateApiFromOpenAPI() {
+// 从远程URL获取OpenAPI规范
+async function fetchOpenApiSpec(url, retries = 3) {
+  return new Promise((resolve, reject) => {
+    const client = url.startsWith('https:') ? https : http;
+    
+    console.log(`🌐 正在从远程获取OpenAPI规范: ${url}`);
+    
+    const request = client.get(url, { timeout: config.remote.timeout }, (response) => {
+      let data = '';
+      
+      response.on('data', (chunk) => {
+        data += chunk;
+      });
+      
+      response.on('end', () => {
+        if (response.statusCode === 200) {
+          try {
+            const spec = JSON.parse(data);
+            console.log(`✅ 成功获取远程OpenAPI规范`);
+            
+            // 保存到本地作为备份
+            if (config.remote.saveLocal) {
+              fs.writeFileSync(config.localFallback, JSON.stringify(spec, null, 2));
+              console.log(`💾 已保存到本地备份: ${config.localFallback}`);
+            }
+            
+            resolve(spec);
+          } catch (error) {
+            reject(new Error(`解析OpenAPI规范失败: ${error.message}`));
+          }
+        } else {
+          reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+        }
+      });
+    });
+    
+    request.on('error', (error) => {
+      if (retries > 0) {
+        console.log(`⚠️ 请求失败，重试中... (剩余 ${retries} 次)`);
+        setTimeout(() => {
+          fetchOpenApiSpec(url, retries - 1).then(resolve).catch(reject);
+        }, 1000);
+      } else {
+        reject(error);
+      }
+    });
+    
+    request.on('timeout', () => {
+      request.destroy();
+      reject(new Error('请求超时'));
+    });
+  });
+}
+
+// 获取OpenAPI规范（远程优先，本地备用）
+async function getOpenApiSpec() {
+  try {
+    // 尝试从远程获取
+    const remoteUrl = config.openApiSpec;
+    if (remoteUrl.startsWith('http')) {
+      return await fetchOpenApiSpec(remoteUrl, config.remote.retries);
+    }
+  } catch (error) {
+    console.warn(`⚠️ 远程获取失败: ${error.message}`);
+    console.log(`🔄 尝试使用本地备份文件...`);
+  }
+  
+  // 使用本地文件
+  const localPath = path.resolve(config.localFallback);
+  if (!fs.existsSync(localPath)) {
+    throw new Error(`本地OpenAPI规范文件不存在: ${localPath}`);
+  }
+  
+  const localSpec = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+  console.log(`✅ 使用本地OpenAPI规范: ${localPath}`);
+  return localSpec;
+}
+
+// 从OpenAPI规范生成API客户端
+async function generateApiFromOpenAPI() {
   try {
     console.log('🚀 开始生成API SDK...');
+    console.log('🔧 API SDK生成器');
+    console.log('================\n');
     
-    // 读取OpenAPI规范
-    const openApiPath = path.resolve('./openapi.json');
-    if (!fs.existsSync(openApiPath)) {
-      throw new Error(`OpenAPI规范文件不存在: ${openApiPath}`);
-    }
-    
-    const openApiSpec = JSON.parse(fs.readFileSync(openApiPath, 'utf8'));
-    console.log(`✅ 读取OpenAPI规范: ${openApiPath}`);
+    // 获取OpenAPI规范
+    const openApiSpec = await getOpenApiSpec();
     
     // 确保输出目录存在
     const outputDir = './src/api/generated';

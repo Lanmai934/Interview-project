@@ -19,7 +19,7 @@
       "description": "Mock服务器"
     }
   ],
-  "paths": {
+  "paths": { 
     "/api/login": {
       "post": {
         "summary": "用户登录",
@@ -272,6 +272,66 @@
           }
         }
       }
+    },
+    "/api/users/{id}/reset-password": {
+      "post": {
+        "summary": "重置用户密码",
+        "tags": ["用户管理"],
+        "operationId": "resetUserPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "用户ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "密码重置成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "用户不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -290,6 +350,13 @@
             "description": "用户名",
             "example": "admin",
             "minLength": 3,
+            "maxLength": 50
+          },
+            "password": {
+            "type": "string",
+            "description": "密码",
+            "example": "123456",
+            "minLength": 6,
             "maxLength": 50
           },
           "email": {
@@ -484,6 +551,26 @@
             "type": "object",
             "description": "错误详情",
             "additionalProperties": true
+          }
+        }
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "required": ["newPassword"],
+        "properties": {
+          "newPassword": {
+            "type": "string",
+            "description": "新密码",
+            "minLength": 6,
+            "maxLength": 50,
+            "example": "newPassword123"
+          },
+          "confirmPassword": {
+            "type": "string",
+            "description": "确认密码",
+            "minLength": 6,
+            "maxLength": 50,
+            "example": "newPassword123"
           }
         }
       }

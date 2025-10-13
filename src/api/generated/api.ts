@@ -65,6 +65,13 @@ export class ApiClient {
     return this.client.delete(`/api/users/${id}`);
   }
 
+  /**
+   * 重置用户密码
+   */
+  async resetUserPassword(id: number, data: any): Promise<AxiosResponse<any>> {
+    return this.client.post(`/api/users/${id}/reset-password`, data);
+  }
+
 }
 
 // 默认API客户端实例

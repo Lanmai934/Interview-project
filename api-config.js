@@ -1,18 +1,33 @@
 // API生成配置文件
 module.exports = {
   // OpenAPI规范文件路径（可以是本地文件或远程URL）
-  openApiSpec: './openapi.json', // 本地文件
-  // openApiSpec: 'http://localhost:3000/openapi.json', // 远程URL
+  // 优先使用环境变量，然后是远程URL，最后是本地文件
+  openApiSpec: process.env.API_SPEC_URL || 'http://localhost:3000/openapi.json', // 远程URL优先
+  localFallback: './openapi.json', // 本地备份文件
+  
+  // 远程拉取配置
+  remote: {
+    // 后端API服务地址
+    baseURL: process.env.API_BASE_URL || 'http://localhost:3000',
+    // OpenAPI规范端点
+    specEndpoint: '/openapi.json',
+    // 请求超时时间（毫秒）
+    timeout: 10000,
+    // 重试次数
+    retries: 3,
+    // 是否保存到本地作为备份
+    saveLocal: true
+  },
   
   // 生成的API文件输出目录
   outputDir: './src/api/generated',
   
   // 生成的文件名
-  fileName: 'api.ts',
+  fileName: 'api.js',
   
   // swagger-typescript-api 配置选项
   generateOptions: {
-    name: 'api.ts',
+    name: 'api.js',
     output: './src/api/generated',
     url: '', // 如果使用远程URL，在这里设置
     input: './openapi.json', // 本地文件路径
@@ -20,7 +35,7 @@ module.exports = {
     generateClient: true,
     generateRouteTypes: true,
     generateResponses: true,
-    toJS: false, // 生成TypeScript文件
+    toJS: true, // 生成JavaScript文件
     extractRequestParams: true,
     extractRequestBody: true,
     extractEnums: true,

@@ -11,7 +11,10 @@
     "api:docs": "swagger-ui-serve openapi.json --port 8080",
     "api:validate": "node scripts/validate-api.js",
     "api:test": "npm run api:validate && npm run api:generate",
-    "dev:full": "concurrently \"npm run serve\" \"npm run api:mock\" \"npm run api:docs\""
+    "api:sync": "node scripts/sync-api.js",
+    "api:pull": "node scripts/generate-api.js",
+    "dev:full": "concurrently \"npm run serve\" \"npm run api:mock\" \"npm run api:docs\"",
+    "dev:sync": "npm run api:sync"
   },
   "dependencies": {
     "@mapbox/polyline": "^1.2.1",
@@ -40,11 +43,11 @@
     "@vue/cli-service": "~5.0.0",
     "body-parser": "^1.20.3",
     "concurrently": "^9.2.1",
+    "dotenv": "^17.2.3",
     "eslint": "^7.32.0",
     "eslint-plugin-vue": "^8.0.3",
     "less": "^4.1.1",
     "less-loader": "^7.3.0",
-    "mockjs": "^1.1.0",
     "sass": "^1.85.1",
     "sass-loader": "^10.5.2",
     "swagger-typescript-api": "^13.2.11",
