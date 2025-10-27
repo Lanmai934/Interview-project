@@ -3,7 +3,7 @@
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: '.env.development' });
 
 // 加载配置
 const config = require('../api-config.js');
@@ -68,7 +68,7 @@ async function switchToBackendEnvironment() {
     
     // 替换为后端服务配置
     const baseApiPattern = /VUE_APP_BASE_API\s*=\s*['"]?[^'"\n\r]*['"]?/;
-    const backendApiConfig = "VUE_APP_BASE_API = '/api'";
+    const backendApiConfig = "VUE_APP_BASE_API = 'http://localhost:3000'";
     
     if (baseApiPattern.test(envContent)) {
       envContent = envContent.replace(baseApiPattern, backendApiConfig);
@@ -78,8 +78,8 @@ async function switchToBackendEnvironment() {
     
     // 写入文件
     fs.writeFileSync(envPath, envContent, 'utf8');
-    log('✅ 已切换回后端服务环境', 'green');
-    log('   前端API调用地址: /api (需要后端服务运行)', 'cyan');
+    log('✅ 已切换到真实后端服务环境', 'green');
+    log('   前端API调用地址: http://localhost:3000 (需要后端服务运行)', 'cyan');
     
     return true;
   } catch (error) {
@@ -121,9 +121,9 @@ function execCommand(command, options = {}) {
 async function checkBackendHealth() {
   try {
     log('🔍 检查后端服务状态...', 'cyan');
-    const healthUrl = `${config.remote.baseURL}/health`;
+    const healthUrl = `${config.remote.baseURL}`;
     
-    // 使用curl检查服务状态
+    // 使用curl检查服务状态（检查根路径）
     await execCommand(`curl -f -s ${healthUrl}`, { timeout: 5000 });
     log('✅ 后端服务正常运行', 'green');
     return true;
@@ -342,57 +342,59 @@ async function startDocsServer() {
 
 // 主函数
 async function main() {
-  log('🚀 前后端API协同开发工具', 'bright');
-  log('================================', 'bright');
+  log('🚀 前后端API协同开发工具 - 真实后端模式', 'bright');
+  log('==========================================', 'bright');
   log('');
   
   try {
     // 1. 检查后端服务
     const backendAvailable = await checkBackendHealth();
     
+    if (!backendAvailable) {
+      log('❌ 后端服务不可用，请确保后端服务运行在 http://localhost:3000', 'red');
+      log('💡 提示: 请先启动后端服务，然后重新运行此命令', 'yellow');
+      process.exit(1);
+    }
+    
     // 2. 拉取最新API规范并生成JavaScript客户端
     const specFetched = await fetchLatestSpec();
     if (!specFetched) {
-      log('⚠️ 使用本地备份继续...', 'yellow');
+      log('⚠️ 无法从后端获取API规范，使用本地备份继续...', 'yellow');
     }
     
     // 3. 生成JavaScript客户端
     await generateJSClient();
     
-    // 4. 启动Mock服务（会自动确保使用最新规范）
-    const mockProcess = await startMockServer();
+    // 4. 切换到真实后端服务环境
+    await switchToBackendEnvironment();
+    log('💡 提示: 前端服务需要重启以应用新的环境变量', 'yellow');
     
-    // 5. 自动切换到Mock服务环境
-    if (mockProcess) {
-      await switchToMockEnvironment();
-      log('💡 提示: 前端服务需要重启以应用新的环境变量', 'yellow');
-    }
-    
-    // 6. 启动文档服务
+    // 5. 启动文档服务（可选）
     const docsProcess = await startDocsServer();
     
     log('');
-    log('🎉 API协同开发环境已就绪!', 'green');
+    log('🎉 真实后端API开发环境已就绪!', 'green');
     log('');
     log('📋 可用服务:', 'bright');
-    log(`   🎭 Mock API: http://localhost:${process.env.MOCK_PORT || 4010}`, 'cyan');
+    log(`   🔗 后端API: http://localhost:3000`, 'cyan');
+    log(`   📚 后端API文档: http://localhost:3000/api-docs`, 'cyan');
     if (docsProcess) {
-      log(`   📚 API文档: http://localhost:${process.env.DOCS_PORT || 8080}`, 'cyan');
+      log(`   📖 本地API文档: http://localhost:${process.env.DOCS_PORT || 8080}`, 'cyan');
     }
     log(`   🔧 前端开发: npm run serve`, 'cyan');
     log('');
-    log('💡 提示: 按 Ctrl+C 停止所有服务', 'yellow');
+    log('💡 提示: 前端现在将直接连接到真实后端服务', 'green');
+    log('💡 提示: 按 Ctrl+C 停止文档服务', 'yellow');
     
     // 监听退出信号
     process.on('SIGINT', () => {
       log('\n🛑 正在停止服务...', 'yellow');
-      if (mockProcess) mockProcess.kill();
       if (docsProcess) docsProcess.kill();
       process.exit(0);
     });
     
-    // 保持进程运行
-    if (mockProcess || docsProcess) {
+    // 保持进程运行（如果有文档服务）
+    if (docsProcess) {
       await new Promise(() => {}); // 永远等待
     }
     

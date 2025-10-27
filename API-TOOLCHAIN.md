@@ -52,14 +52,31 @@ npm run dev:full
 
 ## 🛠️ 可用命令
 
-| 命令 | 描述 |
-|------|------|
-| `npm run api:validate` | 验证 OpenAPI 规范文件 |
-| `npm run api:generate` | 生成前端 TypeScript SDK |
-| `npm run api:mock` | 启动 Prism Mock 服务器 (端口 4010) |
-| `npm run api:docs` | 启动 Swagger UI 文档服务器 (端口 8080) |
-| `npm run api:test` | 验证规范并生成 SDK |
-| `npm run dev:full` | 启动完整开发环境 |
+| 命令 | 描述 | 模式 |
+|------|------|------|
+| `npm run api:validate` | 验证 OpenAPI 规范文件 | 通用 |
+| `npm run api:generate` | 生成前端 TypeScript SDK | 通用 |
+| `npm run api:mock` | 启动 Prism Mock 服务器 (端口 4010) | Mock模式 |
+| `npm run api:docs` | 启动 Swagger UI 文档服务器 (端口 8080) | 通用 |
+| `npm run api:test` | 验证规范并生成 SDK | 通用 |
+| `npm run api:sync` | **🆕 API同步工具（真实后端模式）** | 真实后端模式 |
+| `npm run api:pull` | 拉取API更新（等同于api:generate） | 通用 |
+| `npm run dev:full` | 启动完整Mock开发环境 | Mock模式 |
+| `npm run dev:sync` | **🆕 启动真实后端同步开发环境** | 真实后端模式 |
+
+### 🔄 **开发模式说明**
+
+#### 🎭 **Mock开发模式**
+适用于独立前端开发，不依赖后端服务：
+```bash
+npm run dev:full
+```
+
+#### 🔗 **真实后端模式**（推荐）
+适用于前后端联调开发，连接真实后端服务：
+```bash
+npm run dev:sync
+```
 
 ## 🔧 配置说明
 
@@ -105,6 +122,85 @@ const createUserData: CreateUserRequest = {
 const response = await apiClient.createUser(createUserData);
 // response 自动推断为 AxiosResponse<any> 类型
 ```
+
+## 🔗 真实后端模式（推荐）
+
+### 启动真实后端同步工具
+```bash
+npm run api:sync
+```
+
+**功能特性**：
+- ✅ 自动检查后端服务状态（`http://localhost:3000`）
+- ✅ 从后端拉取最新OpenAPI规范
+- ✅ 生成JavaScript API客户端代码
+- ✅ 自动切换前端环境变量到真实后端
+- ✅ 启动本地API文档服务（可选）
+
+**执行流程**：
+1. **后端健康检查** - 验证后端服务是否可用
+2. **API规范同步** - 从 `http://localhost:3000/api-docs/swagger.json` 获取最新规范
+3. **客户端代码生成** - 更新 `src/api/generated/` 目录下的代码
+4. **环境变量切换** - 自动将 `VUE_APP_BASE_API` 设置为 `http://localhost:3000`
+5. **文档服务启动** - 启动本地API文档服务
+
+**使用示例**：
+```bash
+# 1. 启动真实后端同步
+npm run api:sync
+```
+
+### 📥 从后端接口更新 API 定义
+
+#### 自动更新模式（推荐）
+使用 `api:sync` 命令可以自动从后端服务获取最新的 OpenAPI 规范：
+
+```bash
+npm run api:sync
+```
+
+**工作原理**：
+1. 检查后端服务健康状态（`http://localhost:3000`）
+2. 从后端获取最新 OpenAPI 规范（`http://localhost:3000/openapi.json`）
+3. 自动更新本地 `openapi.json` 文件
+4. 重新生成前端 API 客户端代码
+5. 切换到真实后端环境
+
+#### 手动拉取模式
+如果只需要更新 API 定义而不启动完整同步流程：
+
+```bash
+npm run api:pull
+```
+
+**配置说明**：
+- 在 `.env.development` 文件中设置 `API_SPEC_URL=http://localhost:3000/openapi.json`
+- 如果远程获取失败，会自动回退到使用本地 `openapi.json` 文件
+- 支持任何符合 OpenAPI 3.0+ 规范的远程端点
+
+#### 环境变量配置
+```bash
+# .env.development
+API_SPEC_URL=http://localhost:3000/openapi.json  # 后端 OpenAPI 规范地址
+VUE_APP_BASE_API=http://localhost:3000           # 前端 API 基础地址
+API_BASE_URL=http://localhost:3000               # API 基础地址
+```
+
+#### 故障处理
+- **后端服务不可用**：自动回退到 Mock 模式
+- **OpenAPI 规范获取失败**：使用本地备份文件
+- **生成失败**：检查 OpenAPI 规范格式是否正确
+# 2. 重启前端服务应用新配置
+npm run serve
+
+# 现在前端将直接连接到真实后端服务
+```
+
+**服务地址**：
+- 🔗 **后端API**: `http://localhost:3000`
+- 📚 **后端API文档**: `http://localhost:3000/api-docs`
+- 📖 **本地API文档**: `http://localhost:8080`（如果启动）
+- 🔧 **前端开发**: `http://localhost:8080`
 
 ## 🧪 Mock 测试
 

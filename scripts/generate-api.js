@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const http = require('http');
-require('dotenv').config();
+require('dotenv').config({ path: '.env.development' });
 
 // 加载配置
 const config = require('../api-config.js');
@@ -114,6 +114,12 @@ async function generateApiFromOpenAPI() {
     const apiFilePath = path.join(outputDir, 'api.ts');
     fs.writeFileSync(apiFilePath, apiCode);
     console.log(`✅ 生成API客户端: ${apiFilePath}`);
+    
+    // 生成JavaScript版本的API客户端
+    const jsApiCode = generateJsApiClient(openApiSpec);
+    const jsApiFilePath = path.join(outputDir, 'api.js');
+    fs.writeFileSync(jsApiFilePath, jsApiCode);
+    console.log(`✅ 生成JavaScript API客户端: ${jsApiFilePath}`);
     
     // 生成类型定义
     const typesCode = generateTypes(openApiSpec);
@@ -241,6 +247,114 @@ function generateApiClient(openApiSpec) {
   apiCode += `// 默认API客户端实例\nexport const apiClient = new ApiClient();\n`;
   
   return apiCode;
+}
+
+// 生成JavaScript版本的API客户端
+function generateJsApiClient(openApiSpec) {
+  const baseUrl = openApiSpec.servers?.[0]?.url || 'http://localhost:3000';
+  const paths = openApiSpec.paths || {};
+  
+  let apiCode = `// Auto-generated JavaScript API client from OpenAPI specification\nimport axios from 'axios';\n\n`;
+  
+  // 生成API客户端类
+  apiCode += `export class ApiClient {\n`;
+  
+  // 构造函数
+  apiCode += `  constructor(baseURL = '${baseUrl}') {\n`;
+  apiCode += `    this.client = axios.create({\n`;
+  apiCode += `      baseURL,\n`;
+  apiCode += `      headers: {\n`;
+  apiCode += `        'Content-Type': 'application/json',\n`;
+  apiCode += `      },\n`;
+  apiCode += `    });\n`;
+  apiCode += `  }\n\n`;
+  
+  // 设置认证token方法
+  apiCode += `  setAuthToken(token) {\n`;
+  apiCode += `    this.client.defaults.headers.common['Authorization'] = \`Bearer \${token}\`;\n`;
+  apiCode += `  }\n\n`;
+  
+  // 生成API方法
+  Object.entries(paths).forEach(([path, pathItem]) => {
+    Object.entries(pathItem).forEach(([method, operation]) => {
+      if (operation.operationId) {
+        apiCode += generateJsApiMethod(path, method, operation);
+        apiCode += '\n\n';
+      }
+    });
+  });
+  
+  apiCode += '}\n\n';
+  
+  // 导出默认实例
+  apiCode += `// 默认API客户端实例\nexport const apiClient = new ApiClient();\n`;
+  
+  return apiCode;
+}
+
+// 生成JavaScript版本的API方法
+function generateJsApiMethod(path, method, operation) {
+  const methodName = operation.operationId;
+  const summary = operation.summary || '';
+  const parameters = operation.parameters || [];
+  const requestBody = operation.requestBody;
+  
+  let methodCode = `  /**\n   * ${summary}\n   */\n`;
+  
+  // 方法签名
+  let params = [];
+  let pathParams = [];
+  let queryParams = [];
+  
+  // 处理路径参数和查询参数
+  parameters.forEach(param => {
+    if (param.in === 'path') {
+      pathParams.push(param.name);
+      params.push(param.name);
+    } else if (param.in === 'query') {
+      queryParams.push(param.name);
+      params.push(param.name);
+    }
+  });
+  
+  // 处理请求体
+  if (requestBody) {
+    params.push('data');
+  }
+  
+  methodCode += `  async ${methodName}(${params.join(', ')}) {\n`;
+  
+  // 构建URL
+  let url = path;
+  pathParams.forEach(param => {
+    url = url.replace(`{${param}}`, `\${${param}}`);
+  });
+  
+  // 构建查询参数
+  if (queryParams.length > 0) {
+    methodCode += `    const params = {\n`;
+    queryParams.forEach(param => {
+      methodCode += `      ${param},\n`;
+    });
+    methodCode += `    };\n`;
+  }
+  
+  // 发送请求
+  const requestConfig = [];
+  if (queryParams.length > 0) {
+    requestConfig.push('{ params }');
+  }
+  
+  if (requestBody) {
+    methodCode += `    const response = await this.client.${method}(\`${url}\`, data${requestConfig.length > 0 ? ', ' + requestConfig.join(', ') : ''});\n`;
+  } else {
+    methodCode += `    const response = await this.client.${method}(\`${url}\`${requestConfig.length > 0 ? ', ' + requestConfig.join(', ') : ''});\n`;
+  }
+  
+  methodCode += `    return response.data;\n`;
+  methodCode += `  }`;
+  
+  return methodCode;
 }
 
 // 生成单个API方法

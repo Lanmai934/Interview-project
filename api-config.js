@@ -1,8 +1,8 @@
 // API生成配置文件
 module.exports = {
   // OpenAPI规范文件路径（可以是本地文件或远程URL）
-  // 优先使用环境变量，然后是远程URL，最后是本地文件
-  openApiSpec: process.env.API_SPEC_URL || 'http://localhost:3000/openapi.json', // 远程URL优先
+  // 优先使用环境变量，如果没有则使用本地文件（因为后端服务没有提供openapi.json端点）
+  openApiSpec: process.env.API_SPEC_URL || './openapi.json', // 使用本地文件
   localFallback: './openapi.json', // 本地备份文件
   
   // 远程拉取配置

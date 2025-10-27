@@ -20,7 +20,7 @@
     }
   ],
   "paths": { 
-    "/api/login": {
+    "/api/users/login": {
       "post": {
         "summary": "用户登录",
         "tags": ["用户管理"],
