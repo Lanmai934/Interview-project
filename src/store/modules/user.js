@@ -1,9 +1,24 @@
 import { login } from '@/api/user'
 import { apiClient } from '@/api/generated/index.js';
 
+// 安全的JSON解析函数
+const safeJsonParse = (str, defaultValue = {}) => {
+  try {
+    console.log("ooooo",str, defaultValue)
+    if (!str || str === 'undefined' || str === 'null') {
+      return defaultValue
+    }
+    console.log("ppppppp",JSON.parse(str))
+    return JSON.parse(str)
+  } catch (error) {
+    console.warn('JSON parse error:', error)
+    return defaultValue
+  }
+}
+
 const state = {
   token: localStorage.getItem('token') || '',
-  userInfo: JSON.parse(localStorage.getItem('userInfo') || '{}')
+  userInfo: safeJsonParse(localStorage.getItem('userInfo'), {})
 }
 
 const mutations = {
@@ -13,9 +28,9 @@ const mutations = {
     // 同时设置API客户端的token
     apiClient.setAuthToken(token)
   },
-  SET_USER_INFO: (state, userInfo) => {
-    state.userInfo = userInfo
-    localStorage.setItem('userInfo', JSON.stringify(userInfo))
+  SET_USER_INFO: (state, user) => {
+    state.userInfo = user
+    localStorage.setItem('userInfo', JSON.stringify(user))
   },
   CLEAR_USER: (state) => {
     state.token = ''
@@ -38,10 +53,11 @@ const actions = {
     return new Promise((resolve, reject) => {
       login(loginData)
         .then(response => {
-          console.log('Login API response:', response)
           const { data } = response
+          console.log('Login API response:', data)
+
           commit('SET_TOKEN', data.token)
-          commit('SET_USER_INFO', data.userInfo)
+          commit('SET_USER_INFO', data.user)
           resolve(data)
         })
         .catch(error => {
