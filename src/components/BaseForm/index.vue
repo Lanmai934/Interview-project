@@ -107,8 +107,15 @@ export default {
     formData: {
       handler(val) {
         this.innerFormData = { ...val }
+        // 确保表单重新渲染
+        this.$nextTick(() => {
+          if (this.$refs.formRef) {
+            this.$refs.formRef.clearValidate()
+          }
+        })
       },
-      deep: true
+      deep: true,
+      immediate: true
     }
   },
   methods: {
@@ -135,4 +142,4 @@ export default {
     }
   }
 }
-</script> 
+</script>

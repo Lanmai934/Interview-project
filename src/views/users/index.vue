@@ -7,38 +7,36 @@
       :pagination="pagination"
       :scroll="{ y: tableHeight, x: '100%' }"
       row-key="id"
+      :show-operations="true"
       :custom-row="customRow"
       @change="handleTableChange"
       @add="handleAdd"
       @search="onSearch"
     >
-      <template #status="{ text }">
-        <a-badge
-          :status="text ? 'success' : 'error'"
-          :text="text ? '启用' : '禁用'"
-        />
-      </template>
-      <template #action="{ record }">
-        <a-button type="link" @click="handleEdit(record)">编辑</a-button>
-        <a-divider type="vertical" />
-        <a-popconfirm
-          title="确定要删除此用户吗？"
-          @confirm="handleDelete(record)"
-        >
-          <a-button type="link" danger>删除</a-button>
-        </a-popconfirm>
+      <template slot="action" slot-scope="text">
+        <div>
+          <a-button type="link" @click="handleEdit(text)">编辑</a-button>
+          <a-divider type="vertical" />
+          <a-popconfirm
+            title="确定要删除此用户吗？"
+            @confirm="handleDelete(text)"
+          >
+            <a-button type="link" danger>删除</a-button>
+          </a-popconfirm>
+        </div>
       </template>
     </base-table>
 
     <base-modal
       v-model="modalVisible"
       :title="formTitle"
+      :confirmLoading="submitting"
       @ok="handleSubmit"
     >
       <base-form
         ref="userForm"
         :fields="formFields"
-        :form-data="userForm"
+        :formData="userForm"
         :rules="rules"
         :show-footer="false"
       />
@@ -60,6 +58,7 @@ export default {
       loading: false,
       searchQuery: '',
       modalVisible: false,
+      submitting: false, // 添加提交状态锁
       userForm: {
         username: '',
         email: '',
@@ -94,16 +93,26 @@ export default {
         },
         {
           title: '创建时间',
-          dataIndex: 'createTime',
+          dataIndex: 'updated_at',
           width: 180,
           sorter: true
+        },
+        {
+          title: '操作',
+          key: 'action',
+          fixed: 'right',
+          width: 200,
+          scopedSlots: { customRender: 'action' }
         }
       ],
       userList: [],
       pagination: {
         current: 1,
         pageSize: 10,
-        total: 0
+        total: 0,
+        showSizeChanger: true,
+        showQuickJumper: true,
+        showTotal: (total, range) => `共 ${total} 条记录，当前显示 ${range[0]}-${range[1]} 条`
       },
       formFields: [
         {
@@ -155,9 +164,10 @@ export default {
           page: this.pagination.current,
           pageSize: this.pagination.pageSize
         })
+        console.log('Fetch users response:', res)
         if (res.data) {
-          this.userList = res.data.list
-          this.pagination.total = res.data.total
+          this.userList = res.data
+          this.pagination.total = res.total
         }
       } catch (error) {
         console.error('Fetch users error:', error)
@@ -186,11 +196,11 @@ export default {
           // 可以根据需要添加行属性
         },
         on: {
-          click: () => {
+          click: (event) => {
             // 行点击事件
             console.log('Row clicked:', record)
           },
-          dblclick: () => {
+          dblclick: (event) => {
             // 双击编辑
             this.handleEdit(record)
           }
@@ -198,11 +208,7 @@ export default {
       }
     },
     async handleAdd() {
-      this.userForm = {
-        username: '',
-        email: '',
-        status: true
-      }
+      this.userForm = this.getInitialForm()
       this.modalVisible = true
     },
     async handleEdit(record) {
@@ -210,40 +216,33 @@ export default {
       this.modalVisible = true
     },
     async handleDelete(record) {
-      try {
         await deleteUser(record.id)
-        this.$message.success('删除成功')
         this.fetchUsers()
-      } catch (error) {
-        this.$message.error('删除失败')
-      }
     },
     async handleSubmit() {
-      try {
+
+      // 防止重复提交
+      if (this.submitting) {
+        return
+      }
+
+      this.submitting = true
         const valid = await this.$refs.userForm.validate()
         if (valid) {
-          if (this.userForm.id) {
-            await updateUser(this.userForm)
-            this.$message.success('更新成功')
-            await this.fetchUsers()
+          // 获取表单组件内部的实际数据
+          const formData = this.$refs.userForm.innerFormData
+          
+          if (formData.id) {
+            await updateUser(formData)
           } else {
-            const res = await addUser(this.userForm)
-            if (res.data) {
-              this.userList = res.data.list
-              this.pagination = {
-                ...this.pagination,
-                current: 1,
-                total: res.data.total
-              }
-              this.$message.success('添加成功')
-            }
+            await addUser(formData)
           }
+          
           this.modalVisible = false
+          this.submitting = false
+          await this.fetchUsers()
         }
-      } catch (error) {
-        console.error('Submit error:', error)
-        this.$message.error(this.userForm.id ? '更新失败' : '添加失败')
-      }
+      
     },
     onSearch() {
       this.pagination.current = 1
@@ -277,4 +276,4 @@ export default {
 .table-operations {
   margin-bottom: 16px;
 }
-</style> 
+</style>

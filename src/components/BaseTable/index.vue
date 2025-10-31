@@ -26,10 +26,7 @@
       :custom-row="customRow"
       @change="handleTableChange"
     >
-      <template v-for="(_, name) in $slots" #[name]="slotProps">
-        <slot :name="name" v-bind="slotProps"></slot>
-      </template>
-      <template v-for="(_, name) in $scopedSlots" #[name]="slotProps">
+      <template v-for="(_, name) in $scopedSlots" :slot="name" slot-scope="slotProps">
         <slot :name="name" v-bind="slotProps"></slot>
       </template>
     </a-table>
@@ -145,6 +142,7 @@ export default {
   },
   methods: {
     handleAdd() {
+      console.log('Add button clicked',this.searchValue)
       this.$emit('add')
     },
     onSearch(value) {
@@ -203,4 +201,4 @@ export default {
     }
   }
 }
-</style> 
+</style>
