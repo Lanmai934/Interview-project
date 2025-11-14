@@ -6,6 +6,8 @@ import Antd from 'ant-design-vue'
 import 'ant-design-vue/dist/antd.css'
 import Components from './components'
 import { errorHandlingMixin } from './utils/error-handler'
+import '@univerjs/ui/lib/index.css'
+import '@univerjs/sheets-ui/lib/index.css'
 
 Vue.use(Antd)
 Vue.use(Components)
@@ -37,9 +39,8 @@ window.addEventListener('auth:logout', (event) => {
     router.push('/login')
     
     // 显示提示信息
-    if (reason === 'token_expired') {
-      Vue.prototype.$message.warning('登录已过期，请重新登录')
-    }
+    const message = reason ? `已登出：${reason}` : '已登出'
+    console.warn(message)
   }
 })
 

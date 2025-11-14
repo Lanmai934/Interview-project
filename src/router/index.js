@@ -70,6 +70,18 @@ export const constantRoutes = [
         meta: { title: 'WebGIS', icon: 'global' }
       }
     ]
+  },
+  {
+    path: '/bi',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'BusinessIntelligence',
+        component: () => import('@/views/BI/index'),
+        meta: { title: '商业智能(BI)', icon: 'area-chart' }
+      }
+    ]
   }
 ]
 

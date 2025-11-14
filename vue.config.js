@@ -4,6 +4,10 @@ module.exports = {
   devServer: {
     port: 8080
   },
+  // Ensure Univer packages are transpiled by Babel/webpack
+  transpileDependencies: [
+    '@univerjs'
+  ],
   configureWebpack: {
     experiments: {
       asyncWebAssembly: true
@@ -12,9 +16,9 @@ module.exports = {
       rules: [
         {
           test: /\.wasm$/,
-          type: "webassembly/async"
+          type: 'webassembly/async'
         }
       ]
     }
   }
-} 
+}
